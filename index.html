@@ -58,7 +58,7 @@ function ensureState(){state.records=state.records||[];state.improvements=state.
 ensureState();
 let editingId=null;
 const SCHOOL_OPTIONS={
-  schoolGender:['بنين','بنات'],schoolAuthority:['حكومي','أهلي','عالمي'],schoolType:['تعليمي','طفولة مبكرة','مشترك'],term:['الفصل الدراسي الأول','الفصل الدراسي الثاني','الفصل الدراسي الثالث'],earlyChildhood:['نعم','لا'],schoolServant:['0','1','2','3'],
+  stage:['ابتدائي','متوسط','ثانوي'],schoolGender:['بنين','بنات'],schoolAuthority:['حكومي','أهلي','عالمي'],schoolType:['تعليمي','طفولة مبكرة','مشترك'],term:['الفصل الدراسي الأول','الفصل الدراسي الثاني','الفصل الدراسي الثالث'],earlyChildhood:['نعم','لا'],schoolServant:['0','1','2','3'],
   achievementGeneral:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementIslamic:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementArabic:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementMath:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementScience:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementEnglish:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementComputer:['مقبول','جيدة','جيدة جدًا','ممتازة'],achievementNational:['مقبول','جيدة','جيدة جدًا','ممتازة'],
   learningResources:['متوفر','غير متوفر'],clinic:['متوفر','غير متوفر'],transport:['متوفر','غير متوفر'],transportRoutes:['متوفر','غير متوفر'],buildingStructure:['غير مناسبة','مقبولة','جيدة','ممتازة'],toiletsQuality:['غير مناسبة','مقبولة','جيدة','ممتازة'],cafeteriaQuality:['غير مناسبة','مقبولة','جيدة','ممتازة','غير متوفر'],activityHallsQuality:['غير مناسبة','مقبولة','جيدة','ممتازة','غير متوفر'],labsAvailable:['متوفر','غير متوفر'],sportsFacilities:['متوفر','غير متوفر']
 };
@@ -101,13 +101,43 @@ function closeModal(){document.getElementById('modal').classList.remove('active'
 function printModal(){let html=document.getElementById('modalContent').innerHTML;let w=window.open('','_blank');w.document.write(`<html dir="rtl" lang="ar"><head><title>طباعة سجل</title><style>body{font-family:Tahoma,Arial;padding:20px}table{width:100%;border-collapse:collapse}th,td{border:1px solid #bbb;padding:8px}.modelCard{border:1px solid #bbb;margin:10px 0;padding:12px;border-radius:10px}.check{display:block;margin:4px}.reportHeadTop{display:grid;grid-template-columns:1fr 2fr 1fr;background:#006C35;color:white;text-align:center;padding:10px}</style></head><body>${html}</body></html>`);w.document.close();w.print()}
 function renderRecords(){let el=document.getElementById('recordsTable');if(!state.records.length){el.innerHTML='<div class="empty">لا توجد سجلات محفوظة حتى الآن.</div>';return}el.innerHTML=`<div class="tableWrap"><table><thead><tr><th>النوع</th><th>العنوان</th><th>التاريخ</th><th>النسبة</th><th>المستوى</th><th class="noPrint">إجراءات</th></tr></thead><tbody>${state.records.map(r=>{let s=recStats(r);return `<tr><td>${kindName(r.kind)}</td><td>${esc(recTitle(r))}</td><td>${esc(r.date)}</td><td>${s.p}%</td><td>${s.lvl}</td><td class="noPrint"><button class="btn" onclick="viewRec(${r.id},false)">عرض</button> <button class="btn gold" onclick="viewRec(${r.id},true)">تعديل</button> <button class="btn blue" onclick="viewRec(${r.id},false);setTimeout(printModal,250)">طباعة</button> <button class="btn danger" onclick="deleteRec(${r.id})">حذف</button></td></tr>`}).join('')}</tbody></table></div>`}
 function numericVal(id){let el=document.getElementById('sf_'+id);return Number(el?.value||0)||0}
+function currentStage(){return document.getElementById('sf_stage')?.value || state.school.stage || 'ابتدائي'}
+function stageClassLabels(stage=currentStage()){
+  if(stage==='متوسط') return [['grade1Classes','عدد فصول الصف الأول متوسط'],['grade2Classes','عدد فصول الصف الثاني متوسط'],['grade3Classes','عدد فصول الصف الثالث متوسط']];
+  if(stage==='ثانوي') return [['grade1Classes','عدد فصول الصف الأول ثانوي'],['grade2Classes','عدد فصول الصف الثاني ثانوي'],['grade3Classes','عدد فصول الصف الثالث ثانوي']];
+  return [['grade1Classes','عدد فصول الصف الأول ابتدائي'],['grade2Classes','عدد فصول الصف الثاني ابتدائي'],['grade3Classes','عدد فصول الصف الثالث ابتدائي'],['grade4Classes','عدد فصول الصف الرابع ابتدائي'],['grade5Classes','عدد فصول الصف الخامس ابتدائي'],['grade6Classes','عدد فصول الصف السادس ابتدائي']];
+}
+function stagePassLabels(stage=currentStage()){
+  if(stage==='متوسط') return [['passGrade1','نسبة نجاح الصف الأول متوسط'],['passGrade2','نسبة نجاح الصف الثاني متوسط'],['passGrade3','نسبة نجاح الصف الثالث متوسط']];
+  if(stage==='ثانوي') return [['passGrade1','نسبة نجاح الصف الأول ثانوي'],['passGrade2','نسبة نجاح الصف الثاني ثانوي'],['passGrade3','نسبة نجاح الصف الثالث ثانوي']];
+  return [['passGrade1','نسبة نجاح الصف الأول ابتدائي'],['passGrade2','نسبة نجاح الصف الثاني ابتدائي'],['passGrade3','نسبة نجاح الصف الثالث ابتدائي'],['passGrade4','نسبة نجاح الصف الرابع ابتدائي'],['passGrade5','نسبة نجاح الصف الخامس ابتدائي'],['passGrade6','نسبة نجاح الصف السادس ابتدائي']];
+}
 function autoSchoolDerived(){
   let totalStudents=numericVal('saudiStudents')+numericVal('nonSaudiStudents');
   let ts=document.getElementById('sf_totalStudents'); if(ts) ts.value=totalStudents||'';
-  let classes=['grade1Classes','grade2Classes','grade3Classes','grade4Classes','grade5Classes','grade6Classes'].reduce((a,id)=>a+numericVal(id),0);
+  let classes=stageClassLabels().reduce((a,[id])=>a+numericVal(id),0);
   let cc=document.getElementById('sf_classesCount'); if(cc) cc.value=classes||'';
 }
-function renderSchool(){let container=document.getElementById('schoolForm');container.innerHTML=schoolSections.map(sec=>`<div class="formSection"><div class="formSectionTitle"><h3>${esc(sec.title)}</h3><span class="stepBadge">${esc(sec.step)}</span></div><p class="sectionHint">${esc(sec.hint||'')}</p><div class="grid">${sec.fields.map(([id,label,kind])=>{let isLong=['goals','values','achievements','challenges','awards','futureNeeds','address'].includes(id);let options=SCHOOL_OPTIONS[id];let val=state.school[id]??'';let cls=kind==='calculated'?'field readonlyField':'field';let col=isLong?12:(['email','address','internationalProgram'].includes(id)?6:3);let control=options?`<select class="${cls}" id="sf_${id}" ${kind==='calculated'?'disabled':''}>${options.map(o=>`<option ${String(val)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`:(isLong?`<textarea class="${cls}" id="sf_${id}" ${kind==='calculated'?'readonly':''}>${esc(val)}</textarea>`:`<input class="${cls}" id="sf_${id}" value="${esc(val)}" ${kind==='calculated'?'readonly':''}>`);return `<div class="col-${col}"><label>${esc(label)}</label>${control}</div>`}).join('')}</div></div>`).join('');['saudiStudents','nonSaudiStudents','grade1Classes','grade2Classes','grade3Classes','grade4Classes','grade5Classes','grade6Classes'].forEach(id=>{let el=document.getElementById('sf_'+id);if(el)el.addEventListener('input',autoSchoolDerived)});autoSchoolDerived()}
+function sectionFieldsForRender(sec){
+  let fields=sec.fields.map(f=>[...f]);
+  if(sec.title==='بيانات عامة عن المدرسة'){
+    fields=fields.filter(f=>!['grade1Classes','grade2Classes','grade3Classes','grade4Classes','grade5Classes','grade6Classes'].includes(f[0]));
+    let insertAt=fields.findIndex(f=>f[0]==='classesCount');
+    let classFields=stageClassLabels().map(([id,label])=>[id,label]);
+    if(insertAt>=0) fields.splice(insertAt,0,...classFields); else fields.push(...classFields);
+  }
+  if(sec.title==='مستوى تحصيل الطلاب'){
+    fields=fields.filter(f=>!['passGrade1','passGrade2','passGrade3','passGrade4','passGrade5','passGrade6'].includes(f[0]));
+    let insertAt=fields.findIndex(f=>f[0]==='achievementIslamic');
+    let passFields=stagePassLabels().map(([id,label])=>[id,label]);
+    if(insertAt>=0) fields.splice(insertAt,0,...passFields); else fields.push(...passFields);
+  }
+  return fields;
+}
+function renderSchool(){let container=document.getElementById('schoolForm');container.innerHTML=schoolSections.map(sec=>`<div class="formSection"><div class="formSectionTitle"><h3>${esc(sec.title)}</h3><span class="stepBadge">${esc(sec.step)}</span></div><p class="sectionHint">${esc(sec.hint||'')}</p><div class="grid">${sectionFieldsForRender(sec).map(([id,label,kind])=>{let isLong=['goals','values','achievements','challenges','awards','futureNeeds','address'].includes(id);let options=SCHOOL_OPTIONS[id];let val=state.school[id]??'';let cls=kind==='calculated'?'field readonlyField':'field';let col=isLong?12:(['email','address','internationalProgram'].includes(id)?6:3);let control=options?`<select class="${cls}" id="sf_${id}" ${kind==='calculated'?'disabled':''}>${options.map(o=>`<option ${String(val)===o?'selected':''}>${esc(o)}</option>`).join('')}</select>`:(isLong?`<textarea class="${cls}" id="sf_${id}" ${kind==='calculated'?'readonly':''}>${esc(val)}</textarea>`:`<input class="${cls}" id="sf_${id}" value="${esc(val)}" ${kind==='calculated'?'readonly':''}>`);return `<div class="col-${col}"><label>${esc(label)}</label>${control}</div>`}).join('')}</div></div>`).join('');
+  let stageEl=document.getElementById('sf_stage');
+  if(stageEl) stageEl.addEventListener('change',()=>{state.school.stage=stageEl.value; renderSchool();});
+  ['saudiStudents','nonSaudiStudents','grade1Classes','grade2Classes','grade3Classes','grade4Classes','grade5Classes','grade6Classes'].forEach(id=>{let el=document.getElementById('sf_'+id);if(el)el.addEventListener('input',autoSchoolDerived)});autoSchoolDerived()}
 function saveSchool(){autoSchoolDerived();schoolFields.forEach(([id])=>{let el=document.getElementById('sf_'+id);if(el)state.school[id]=el.value});save();renderSchool();alert('تم حفظ بيانات المدرسة وتحديث احتساب الاستبانات تلقائيًا')}
 function indicatorStats(code){let vals=[];state.records.forEach(r=>r.items.forEach(it=>{if(String(it.source.indicator||'').trim()===code)vals.push(it.percent??percent(it.checkedCount,it.total))}));return vals.length?Math.round(vals.reduce((a,b)=>a+b,0)/vals.length):0}
 function renderImprovementControls(){let domains=[...new Set(DATA.indicators.map(x=>x.domain))];let d=document.getElementById('impDomain');let old=d.value;d.innerHTML=domains.map(x=>`<option>${esc(x)}</option>`).join('');if(old)d.value=old;d.onchange=()=>{renderIndicatorSelect();renderDomainIndicatorTable()};renderIndicatorSelect();renderDomainIndicatorTable()}
